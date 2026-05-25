@@ -37,14 +37,17 @@ app.use(
 app.use(express.json());
 app.use("/uploads", express.static(path.resolve("uploads")));
 
-// Root backend health endpoint (production-ready simple text response)
-// Placed FIRST so it matches before SPA fallback
+// API routes (mounted FIRST so they are evaluated before catch-all routes)
+app.use("/api/auth", authRoutes);
+app.use("/api/itineraries", itineraryRoutes);
+app.use("/api/uploads", uploadRoutes);
+
+// Root endpoint - explicitly defined to match / exactly
 app.get("/", (req, res) => {
-  res.send("TripGenie AI Backend is running successfully");
+  res.status(200).send("TripGenie AI Backend is running successfully");
 });
 
-// API health endpoint (JSON response)
-// Placed BEFORE all other routes to ensure it's matched first
+// API health check endpoint - explicitly defined for /api/health
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -52,29 +55,28 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// All API routes (auth, uploads, itineraries)
-app.use("/api/auth", authRoutes);
-app.use("/api/itineraries", itineraryRoutes);
-app.use("/api/uploads", uploadRoutes);
-
-// If a client build exists (or when running in production), serve it as a static SPA.
-// Placed AFTER all API routes so they are never caught by the wildcard
+// Serve client if it exists (optional SPA support)
 const clientBuildPath = path.resolve("../client/dist");
 if (process.env.NODE_ENV === "production" || fs.existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath));
-
-  // Serve index.html for any non-API/non-upload route (SPA fallback)
-  // This catches all remaining routes and serves the SPA entry point
+  // Serve static client assets
+  app.use(express.static(clientBuildPath, { index: false }));
+  
+  // SPA fallback: serve index.html for routes that aren't API or uploads
   app.get("*", (req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
       return next();
     }
-
-    res.sendFile(path.join(clientBuildPath, "index.html"));
+    const indexPath = path.join(clientBuildPath, "index.html");
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        // If index.html doesn't exist, let it fall through to 404 handler
+        next();
+      }
+    });
   });
 }
 
-// Global 404 handler for routes not caught by above (only for unknown API or upload paths)
+// Global 404 handler (catches all unmatched routes)
 app.use((req, res, next) => {
   next(new ApiError(404, `Route not found: ${req.originalUrl}`));
 });
