@@ -42,21 +42,20 @@ app.use(
         return;
       }
 
-      // In production, be more lenient to allow Vercel deployments
-      if (process.env.NODE_ENV === "production") {
-        // Allow any .vercel.app domain (Vercel frontend deployments)
-        if (origin.includes(".vercel.app")) {
-          callback(null, true);
-          return;
-        }
-        // Allow localhost for dev/testing
-        if (origin.includes("localhost")) {
-          callback(null, true);
-          return;
-        }
+      // Always allow Vercel (.vercel.app) deployments
+      if (origin.includes(".vercel.app")) {
+        callback(null, true);
+        return;
+      }
+
+      // Always allow localhost for dev/testing
+      if (origin.includes("localhost")) {
+        callback(null, true);
+        return;
       }
 
       // Reject if not allowed
+      console.warn(`CORS rejected origin: ${origin}`);
       callback(new ApiError(403, `Origin not allowed by CORS: ${origin}`));
     },
     credentials: true,
