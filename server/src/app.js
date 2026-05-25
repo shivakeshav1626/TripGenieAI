@@ -9,7 +9,7 @@ import ApiError from "./utils/ApiError.js";
 
 const app = express();
 
-// Build allowed origins from env vars; include common localhost defaults and Vercel if set
+// Build allowed origins from env vars; include common localhost defaults
 const rawClientUrls = process.env.CLIENT_URLS || process.env.CLIENT_URL || "http://localhost:4173,http://localhost:3000";
 const allowedOrigins = rawClientUrls
   .split(",")
@@ -21,15 +21,43 @@ if (process.env.VERCEL_URL) {
   allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
 }
 
+// For production: allow any Vercel deployment (@vercel.app) and deployed Render URLs
+if (process.env.NODE_ENV === "production") {
+  // Already has VERCEL_URL above, but also allow pattern matching for robustness
+  // This is useful if frontend is deployed elsewhere
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
         callback(null, true);
         return;
       }
 
-      callback(new ApiError(403, "Origin not allowed by CORS"));
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      // In production, be more lenient to allow Vercel deployments
+      if (process.env.NODE_ENV === "production") {
+        // Allow any .vercel.app domain (Vercel frontend deployments)
+        if (origin.includes(".vercel.app")) {
+          callback(null, true);
+          return;
+        }
+        // Allow localhost for dev/testing
+        if (origin.includes("localhost")) {
+          callback(null, true);
+          return;
+        }
+      }
+
+      // Reject if not allowed
+      callback(new ApiError(403, `Origin not allowed by CORS: ${origin}`));
     },
     credentials: true,
   })
