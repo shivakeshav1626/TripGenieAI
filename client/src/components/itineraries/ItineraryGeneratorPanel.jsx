@@ -6,6 +6,19 @@ import FormInput from "../FormInput.jsx";
 const budgetOptions = ["budget", "mid-range", "premium"];
 const travelStyles = ["balanced", "luxury", "budget-conscious", "family-friendly", "adventure", "relaxed"];
 
+// Convert DD-MM-YYYY format to YYYY-MM-DD for HTML date inputs
+const convertDateFormat = (dateStr) => {
+  if (!dateStr || typeof dateStr !== "string") return "";
+  // Check if date is in DD-MM-YYYY format
+  const ddmmyyyyMatch = dateStr.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const [, day, month, year] = ddmmyyyyMatch;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  // If already in YYYY-MM-DD format or another format, return as is
+  return dateStr;
+};
+
 const createInitialForm = (defaultUploadId = "") => ({
   tripName: "",
   destination: "",
@@ -79,8 +92,8 @@ const ItineraryGeneratorPanel = ({ uploads = [], defaultUploadId = "", selectedU
           travelStyle: extracted.travelStyle || current.travelStyle,
           hotelPreference: extracted.hotelPreference || current.hotelPreference,
           transportPreference: extracted.transportPreference || current.transportPreference,
-          startDate: extracted.startDate || current.startDate,
-          endDate: extracted.endDate || current.endDate,
+          startDate: convertDateFormat(extracted.startDate) || current.startDate,
+          endDate: convertDateFormat(extracted.endDate) || current.endDate,
           sourceUploadId: defaultUploadId || current.sourceUploadId,
         }));
 
