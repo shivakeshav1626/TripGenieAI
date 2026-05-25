@@ -61,8 +61,8 @@ if (process.env.NODE_ENV === "production" || fs.existsSync(clientBuildPath)) {
   // Serve static client assets
   app.use(express.static(clientBuildPath, { index: false }));
   
-  // SPA fallback: serve index.html for routes that aren't API or uploads
-  app.get("*", (req, res, next) => {
+  // SPA fallback: serve index.html for routes that aren't API or uploads (using regex wildcard)
+  app.get(/.+/, (req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
       return next();
     }
