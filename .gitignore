@@ -9,5 +9,5 @@ coverage
 client/node_modules
 client/dist
 server/node_modules
-uploads
+server/uploads
 tripgenie-share-test.pdf
